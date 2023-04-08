@@ -1,0 +1,12 @@
+/vendor
+/db.sqlite
+.php-cs-fixer.cache
+.phpunit.result.cache
+.idea
+.vscode
+.env
+
+# Devenv
+.devenv*
+devenv.local.nix
+
