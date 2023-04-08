@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Purchase orders</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+
+        #purchase-orders {
+            margin: 0 auto;
+            padding: 20px 20px 0;
+        }
+
+        table.styled {
+            border-collapse: collapse;
+            margin: 0 auto;
+            width: 100%;
+            table-layout: fixed;
+            text-align: left;
+            /* Position relative is for stacking search results over pagination block as it has position fixed */
+            /*position: relative;*/
+        }
+
+        table.styled tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.12);
+        }
+
+        table.styled th, table.styled td {
+            padding: 8px;
+            min-width: 60px;
+            vertical-align: top;
+        }
+
+        table.styled thead {
+            cursor: pointer;
+            height: 40px;
+        }
+
+        table.styled thead th {
+            background-color: rgb(29, 57, 75);
+            position: sticky;
+            top: 20px;
+            text-align: left;
+            z-index: 1;
+        }
+
+        table.styled tfoot td, table.styled th {
+            text-align: left;
+        }
+
+        table.styled thead th {
+            color: #fff;
+        }
+
+        table.styled tr {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+        }
+
+        h3 {
+            margin-top: 0;;
+        }
+
+        h3 + header {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        ul.pagination {
+            margin: 0;
+            padding: 0;
+        }
+
+        ul.pagination li {
+            display: inline-block;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="purchase-orders">
+    <form>
+        <h3>Purchase orders</h3>
+
+        <header>
+            <label>
+                Show annual average price per tonne of each product
+                <input type="checkbox" name="action" value="average-product-price-per-year">
+            </label>
+            <ul class="pagination"></ul>
+        </header>
+        <br><br>
+
+        <table class="styled">
+            <thead>
+            <tr>
+                <th>
+                    Date <br>
+                    <select name="year">
+                        <option value="">All</option>
+                        <option>2023</option>
+                        <option>2022</option>
+                        <option>2021</option>
+                        <option>2020</option>
+                    </select>
+                </th>
+                <th>
+                    Supplier <br>
+                    <select name="supplier">
+                        <option value="">All</option>
+                        <option>Treutel, Pouros and Murphy</option>
+                        <option>Jones-Jenkins</option>
+                        <option>Yellowstone</option>
+                        <option>Hahn, Mueller and Strosin</option>
+                        <option>Buckridge Inc</option>
+                        <option>Ledner and Lehner</option>
+                        <option>Sipes, Harber and Lynch</option>
+                        <option>Stroman, Swift and Rath</option>
+                        <option>Copperfield oil</option>
+                        <option>Balistreri-Kemmer</option>
+                    </select>
+                </th>
+                <th>Order number</th>
+                <th>
+                    Product <br>
+                    <select name="product">
+                        <option value="">All</option>
+                        <option>Sunflower oil</option>
+                        <option>UCOME</option>
+                        <option>Used cooking oil (UCO)</option>
+                        <option>NM30</option>
+                        <option>KM32</option>
+                        <option>Methanol</option>
+                    </select>
+                </th>
+                <th>Price per tonne</th>
+            </tr>
+            </thead>
+
+            <tbody class="list"></tbody>
+        </table>
+    </form>
+</div>
+</body>
+
+<script src="/list.min.js"></script>
+
+<script>
+    'use strict';
+
+    const {purchaseOrders, api, refreshList} = (function () {
+        const valueNames = ['date', 'supplier', 'orderNumber', 'product', 'pricePerTonne'];
+
+        /**
+         * @type {List}
+         */
+        const purchaseOrders = new List(
+            'purchase-orders',
+            {
+                valueNames,
+                item: `<tr>${valueNames.map(valueName => `<td class="${valueName}"></td>`)}</tr>`,
+                pagination: [
+                    {
+                        innerWindow: 3,
+                        left: 1,
+                    },
+                ],
+                page: 100,
+            },
+        );
+
+        /**
+         * @param {List} list
+         * @param {Array} data
+         */
+        function refreshList(list, data) {
+            list.clear();
+            list.add(data);
+        }
+
+        /**
+         * @param {URLSearchParams} filters
+         * @return {Promise<*>}
+         */
+        function api(filters) {
+            const apiBasePath = '/api.php';
+
+            return fetch(`${apiBasePath}?${filters.toString()}`)
+                .then(async response => {
+                    const json = response.json();
+
+                    if (response.ok) {
+                        return json;
+                    }
+
+                    throw (await json).error;
+                });
+        }
+
+        return {
+            purchaseOrders,
+            refreshList,
+            api,
+        };
+    })();
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const $form = document.forms[0];
+
+        $form.addEventListener('change', function () {
+            const filters = new URLSearchParams(new FormData($form));
+
+            api(filters)
+                .then(data => refreshList(purchaseOrders, data))
+                .catch(error => alert(error));
+        });
+
+        $form.dispatchEvent(new Event('change'));
+    });
+</script>
+</html>
